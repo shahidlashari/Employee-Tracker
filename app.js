@@ -1,16 +1,17 @@
 //load dependencies 
-const Actions = require('./lib/Actions');
+const Controller = require('./controllers/controller');
 const mysql = require('mysql2');
 const cTable = require('console.table');
 const inquirer = require('inquirer');
-const Questions = require('./lib/Questions/Questions');
+const Questions = require('./questions/questions');
 
-const myActions = new Actions();
+const myController = new Controller();
 const questions = new Questions();
 //welcome message and "loader"
 function welcome(){
-    console.log("\x1b[34m", "\x1b[33m", "Welcome to Employee Tracker");
-    console.log("Loading Data");
+console.log("\x1b[1m", "\x1b[34m", "Welcome to Employee Tracker");
+                
+console.log("\x1b[1m", "\x1b[34m", "Loading Data");
 
     let duration = 0;
     let time = 250;
@@ -44,6 +45,13 @@ async function mainMenu(){
             case "View Roles":
                 await viewAllRoles();                
                 break;
+            case "View Utilized Budget of Company":
+                await viewTotalUtilizedBudget();                
+                break;
+            case "View Utilized Budget by Department":
+                await viewSalaryByDepartment();                
+                break;
+                
             case "View employees by Manager":
                 await viewEmployeesByManager();
                 break;
@@ -82,7 +90,7 @@ async function viewEmployeesByManager(){
     let managers;
     let managerList;
 
-    await myActions.getAllManagerNames()
+    await myController.getAllManagerNames()
     .then(res=>{
         managers = res; 
         managerList = managers.map(e => e.name);                    
@@ -102,7 +110,7 @@ async function viewEmployeesByManager(){
         default:
             //get the right manager from the list
             manager = managers.find(e => e.name === answer.choice);
-            await myActions.getEmployeesByManager(manager).then(res=>{
+            await myController.getEmployeesByManager(manager).then(res=>{
                 displayResults(res);
             });
             break;
@@ -113,7 +121,7 @@ async function viewEmployeesByManager(){
 }
 
 async function viewAllRoles(){
-    await myActions.viewAllRoles()
+    await myController.viewAllRoles()
     .then(res =>{
         displayResults(res);
     });
@@ -121,7 +129,7 @@ async function viewAllRoles(){
 }
 
 async function viewAllDepartments(){
-    await myActions.getAllDepartments()
+    await myController.getAllDepartments()
     .then(res=>{
         displayResults(res);
     });
@@ -129,14 +137,30 @@ async function viewAllDepartments(){
 }
 
 async function getAllEmployees(){
-    await myActions.getAllEmployees()
+    await myController.getAllEmployeesFullData()
     .then(res =>{
         displayResults(res);
     });
     mainMenu();
 }
+async function viewTotalUtilizedBudget(){
+    await myController.salaryOfAllEmployees()
+    .then(res =>{
+        displayResults(res);
+    });
+    mainMenu();
+}
+async function viewSalaryByDepartment(){
+    await myController.getSalaryByDepartment()
+    .then(res =>{
+        displayResults(res);
+    });
+    mainMenu();
+}
+
+
 async function deleteEmployee(){
-    await myActions.deleteEmployee()
+    await myController.deleteEmployee()
     .then(res =>{
         displayResults(res);
     });
@@ -147,7 +171,7 @@ async function addDepartment(){
     
     await inquirer.prompt(questions.addDepartment)
     .then(async function(answer){        
-        await myActions.addDepartment(answer.department)
+        await myController.addDepartment(answer.department)
         .then(res=>{
             console.log(`New Department ID: ${res}`);
         });
@@ -157,7 +181,7 @@ async function addDepartment(){
 
 }
 async function deleteDepartment(){
-    await myActions.deleteDepartment()
+    await myController.deleteDepartment()
     .then(res =>{
         displayResults(res);
     });
@@ -169,7 +193,7 @@ async function addRole(){
     let departments;
     let departmentNames;
     
-    await myActions.getAllDepartments().then(res=>{
+    await myController.getAllDepartments().then(res=>{
         departmentNames = res.map(e=>e.name);
         departments = res;
     });
@@ -187,7 +211,7 @@ async function addRole(){
             department_id: departments.find(e=>e.name === answers.department).id
         };
 
-        await myActions.addRole(role)
+        await myController.addRole(role)
         .then(res=>{
             console.log(res);
         });
@@ -197,7 +221,7 @@ async function addRole(){
     mainMenu();
 }
 async function deleteRole(){
-    await myActions.deleteRole()
+    await myController.deleteRole()
     .then(res =>{
         displayResults(res);
     });
@@ -214,12 +238,12 @@ async function updateEmployeeRole(){
     let employee;
     let role;
 
-    await myActions.getAllRoles().then(res=>{
+    await myController.getAllRoles().then(res=>{
         roles = res;
         roleNames = res.map(e=>e.title);
     });
 
-    await myActions.getAllEmployees().then(res=>{
+    await myController.getAllEmployees().then(res=>{
         employees = res;
         employeeNames = res.map(e => `${e.first_name} ${e.last_name}`);
     });
@@ -242,7 +266,7 @@ async function updateEmployeeRole(){
     await inquirer.prompt(confirm)
     .then(async function(answer){
         if(answer.confirm){
-            await myActions.updateEmployeeRole(employee,role)
+            await myController.updateEmployeeRole(employee,role)
             .then(res=>{
                 console.log(res);
                 return;
@@ -261,13 +285,13 @@ async function addEmployee(){
     let roles;
     let roleNames;
     
-    await myActions.getAllManagerNames().then(res=>{
+    await myController.getAllManagerNames().then(res=>{
         managerNames = res.map(e=>e.name);
         managers = res;
         managerNames.push("None");
     });
 
-    await myActions.getAllRoles().then(res=>{
+    await myController.getAllRoles().then(res=>{
         roles = res;
         roleNames = res.map(e=>e.title);
     });
@@ -291,7 +315,7 @@ async function addEmployee(){
             manager_id: manager_id 
         };
 
-        await myActions.addEmployee(employee)
+        await myController.addEmployee(employee)
         .then(res=>{
             console.log("New Employee ID: " + res);
         });
